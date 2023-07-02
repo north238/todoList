@@ -14,11 +14,9 @@ export class DraggableElement implements TouchEventHandlers {
   public rect: DOMRect;
   public windowScrollX: number;
   public windowScrollY: number;
-  // public dropZone: HTMLElement;
 
   constructor(element: HTMLElement) {
     this.element = element;
-    // this.dropZone = document.getElementById('finished-tasks-list')!;
     this.rect = this.element.getBoundingClientRect();
     this.windowScrollX = window.scrollX || window.pageXOffset;
     this.windowScrollY = window.scrollY || window.pageYOffset;
@@ -47,16 +45,6 @@ export class DraggableElement implements TouchEventHandlers {
   public handleTouchEnd(event: TouchEvent) {
     this.isDragging = false;
     this.element.classList.remove('dragging');
-    // const x = event.changedTouches[0].clientX;
-    // const y = event.changedTouches[0].clientY;
-    // const checkEl = document.elementFromPoint(x, y)!;
-
-    // if (checkEl === this.dropZone) {
-      
-    //   // this.checkAndUpdateTaskStatus();
-    // } else {
-    //   console.log('ドロップできません');
-    // }
     console.log('drag end');
     event.preventDefault();
   }
