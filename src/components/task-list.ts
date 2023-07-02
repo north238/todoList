@@ -1,19 +1,25 @@
-import { Component } from "./base-component";
-import { DragTarget } from "../models/drag-drop";
-import { Task, TaskStatus } from "../models/task";
-import { autobind } from "../decorators/autobind";
-import { taskState } from "../state/task-state";
-import { TaskItem } from "./task-item";
+import { Component } from './base-component';
+import { DragTarget } from '../models/drag-drop';
+import { Task, TaskStatus } from '../models/task';
+import { autobind } from '../decorators/autobind';
+import { taskState } from '../state/task-state';
+import { TaskItem } from './task-item';
+import { DraggableElement, TouchEventHandlers } from '../models/touch-event';
+
 
 export class TaskList
   extends Component<HTMLDivElement, HTMLElement>
   implements DragTarget
 {
   assignedTasks: Task[];
+  private draggable: TouchEventHandlers;
+
 
   constructor(private type: 'active' | 'finished') {
     super('task-list', 'app', true, `${type}-tasks`);
     this.assignedTasks = [];
+    this.draggable = new DraggableElement(this.element);
+
 
     this.configure();
     this.renderContent();
@@ -48,8 +54,16 @@ export class TaskList
     this.element.addEventListener('dragover', this.dragOverHandler);
     this.element.addEventListener('drop', this.dropHandler);
     this.element.addEventListener('dragleave', this.dragLeaveHandler);
+    this.element.addEventListener(
+      'touchend',
+      (event) => {
+        this.draggable.handleTouchEnd(event);
+      },
+      { passive: false }
+    );
 
     taskState.addListener((tasks: Task[]) => {
+      console.log('taskState実行中');
       const relevantTasks = tasks.filter((task) => {
         if (this.type === 'active') {
           return task.status === TaskStatus.Active;
@@ -58,6 +72,7 @@ export class TaskList
       });
       this.assignedTasks = relevantTasks;
       this.renderTasks();
+      this.checkAndUpdateTaskStatus();
     });
   }
 
@@ -68,7 +83,28 @@ export class TaskList
       this.type === 'active' ? '実行中のタスク' : '完了済みタスク';
   }
 
-  private renderTasks(): void {
+  public checkAndUpdateTaskStatus() {
+    console.log('checked関数実行中');
+    const listEl = document.getElementById(
+      `${this.type}-tasks-list`
+    )! as HTMLUListElement;
+    const taskItems = listEl.querySelectorAll('.draggable');
+    
+    for (const taskItem of taskItems) {
+      const taskId = (taskItem as HTMLElement).id;
+      const task = this.assignedTasks.find((task) => task.id === taskId);
+      if (task) {
+        const newStatus =
+          this.type === 'active' ? TaskStatus.Active : TaskStatus.Finished;
+        if (task.status !== newStatus) {
+          task.status = newStatus;
+          new TaskItem(listEl.id, task);
+        }
+      }
+    }
+  }
+
+  private renderTasks() {
     const listEl = document.getElementById(
       `${this.type}-tasks-list`
     )! as HTMLUListElement;

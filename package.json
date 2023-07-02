@@ -1,6 +1,8 @@
 {
   "dependencies": {
+    "@types/draggabilly": "^2.1.3",
     "class-validator": "^0.14.0",
+    "draggabilly": "^3.0.0",
     "save-dev": "^0.0.1-security",
     "ts-loader": "^9.4.3",
     "typescript": "^5.1.3",

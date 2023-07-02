@@ -1,45 +1,83 @@
-import { Component } from "./base-component";
-import { taskState } from "../state/task-state";
-import { Draggable } from "../models/drag-drop";
-import { Task } from "../models/task";
-import { Modal } from "../models/modal";
-import { autobind } from "../decorators/autobind";
+import { Component } from './base-component';
+import { taskState } from '../state/task-state';
+import { Task } from '../models/task';
+import { Modal } from '../models/modal';
+import { autobind } from '../decorators/autobind';
+import { DraggableElement, TouchEventHandlers } from '../models/touch-event';
 
-export class TaskItem
-  extends Component<HTMLUListElement, HTMLLIElement>
-  implements Draggable
-{
+export class TaskItem extends Component<HTMLUListElement, HTMLLIElement> {
+  templateElement: HTMLTemplateElement;
   private task: Task;
   private modal: Modal;
-  templateElement: HTMLTemplateElement;
+  private draggable: TouchEventHandlers;
 
   constructor(hostId: string, task: Task) {
     super('single-task', hostId, false, task.id);
     this.task = task;
     this.modal = new Modal();
-    this.templateElement = document.getElementById('modal-template') as HTMLTemplateElement;
-
+    this.draggable = new DraggableElement(this.element);
+    this.templateElement = document.getElementById(
+      'modal-template'
+    ) as HTMLTemplateElement;
 
     this.configure();
     this.renderContent();
   }
 
-  @autobind
-  dragStartHandler(event: DragEvent) {
-    event.dataTransfer!.setData('text/plain', this.task.id);
-    event.dataTransfer!.effectAllowed = 'move';
+  configure() {
+    const modalButton = this.element.querySelector('#modal-btn')!;
+    modalButton.addEventListener('click', this.clickHandler, { passive: true });
+    modalButton.addEventListener('touchstart', this.clickHandler, {
+      passive: true,
+    });
+    this.element.addEventListener('dragstart', this.dragStartHandler, {
+      passive: false,
+    });
+    this.element.addEventListener('dragend', this.dragEndHandler, {
+      passive: false,
+    });
+
+    this.element.addEventListener(
+      'touchstart',
+      (event) => {
+        this.draggable.handleTouchStart(event);
+      },
+      { passive: false }
+    );
+    this.element.addEventListener(
+      'touchmove',
+      (event) => {
+        this.draggable.handleTouchMove(event);
+      },
+      { passive: false }
+    );
+    this.element.addEventListener(
+      'touchend',
+      (event) => {
+        this.draggable.handleTouchEnd(event);
+      },
+      { passive: false }
+    );
   }
 
-  dragEndHandler(_: DragEvent) {
-    console.log('Drag end');
+  renderContent() {
+    this.element.querySelector('h2')!.textContent = this.task.task;
   }
 
   @autobind
   clickHandler() {
-    const modalContent = this.templateElement.content.cloneNode(true) as DocumentFragment;
-    const modalTaskElement = modalContent.querySelector('h2') as HTMLHeadingElement;
-    const modalDescriptionElement = modalContent.querySelector('h3') as HTMLHeadingElement;
-    const modalDateElement = modalContent.querySelector('p') as HTMLParagraphElement;
+    const modalContent = this.templateElement.content.cloneNode(
+      true
+    ) as DocumentFragment;
+    const modalTaskElement = modalContent.querySelector(
+      'h2'
+    ) as HTMLHeadingElement;
+    const modalDescriptionElement = modalContent.querySelector(
+      'h3'
+    ) as HTMLHeadingElement;
+    const modalDateElement = modalContent.querySelector(
+      'p'
+    ) as HTMLParagraphElement;
     const deleteButton = modalContent.querySelector('#delete-btn')!;
     deleteButton.addEventListener('click', this.deleteHandler);
 
@@ -54,20 +92,20 @@ export class TaskItem
     this.modal.open();
   }
 
-  configure() {
-    const modalButton = this.element.querySelector('#modal-btn')!;
-    modalButton.addEventListener('click', this.clickHandler);
-    this.element.addEventListener('dragstart', this.dragStartHandler);
-    this.element.addEventListener('dragend', this.dragEndHandler);
-  }
-
-  renderContent() {
-    this.element.querySelector('h2')!.textContent = this.task.task;
-  }
-
   @autobind
   private deleteHandler() {
     taskState.removeTask(this.task.id);
     this.element.remove();
+  }
+
+  @autobind
+  dragStartHandler(event: DragEvent) {
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', this.task.id);
+      event.dataTransfer.effectAllowed = 'move';
+    }
+  }
+  dragEndHandler(_: DragEvent) {
+    console.log('Drag end');
   }
 }
