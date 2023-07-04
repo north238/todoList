@@ -46,7 +46,8 @@ export class TaskList
   }
 
   @autobind
-  touchStartHandler(_: TouchEvent) {
+  touchStartHandler(event: TouchEvent) {
+    event.preventDefault();
     console.log('touch start');
     const listEl = this.element.querySelector('ul')!;
     listEl.classList.add('droppable');
@@ -54,18 +55,17 @@ export class TaskList
 
   @autobind
   touchEndHandler(event: TouchEvent) {
+    event.preventDefault();
     console.log('touch end');
     const listEl = this.element.querySelector('ul')!;
     listEl.classList.remove('droppable');
-    const targetElement = event.currentTarget as HTMLElement;
-    const taskId = targetElement.id;
-    if (taskId) {
-      taskState.moveTask(
-        taskId,
-        this.type === 'active' ? TaskStatus.Active : TaskStatus.Finished
-      );
-    }
-    this.checkAndUpdateTaskStatus();
+    const targetElement = event.target as HTMLElement;
+    const listElement = targetElement.closest('li') as HTMLElement;
+    const taskId = listElement?.id || targetElement.id;
+    taskState.moveTask(
+      taskId,
+      this.type === 'active' ? TaskStatus.Active : TaskStatus.Finished
+    );
   }
 
   configure() {
@@ -74,7 +74,7 @@ export class TaskList
     });
     this.element.addEventListener('drop', this.dropHandler, { passive: false });
     this.element.addEventListener('dragleave', this.dragLeaveHandler, {
-      passive: false,
+      passive: true,
     });
     this.element.addEventListener('touchstart', this.touchStartHandler, {
       passive: false,
@@ -111,17 +111,17 @@ export class TaskList
 
     for (const taskItem of this.assignedTasks) {
       const taskId = taskItem.id;
-      const task = this.assignedTasks.find((task) => task.id === taskId);
-      if (task) {
+      const index = this.assignedTasks.findIndex((task) => task.id === taskId);
+      if (index !== -1) {
         const newStatus =
           this.type === 'active' ? TaskStatus.Active : TaskStatus.Finished;
-        if (task.status !== newStatus) {
-          console.log('checkAndUpdateTaskStatus()');
-          task.status = newStatus;
-          new TaskItem(listEl.id, task);
+        if (this.assignedTasks[index].status !== newStatus) {
+          this.assignedTasks[index].status = newStatus;
+          new TaskItem(listEl.id, this.assignedTasks[index]);
         }
       }
-    new TaskItem(listEl.id, taskItem);
+      console.log('checkAndUpdateTaskStatus()');
+      new TaskItem(listEl.id, taskItem);
     }
   }
 
